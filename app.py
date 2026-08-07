@@ -21,6 +21,25 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# Connect to Google Sheets via Secrets
+@st.cache_resource
+def get_google_sheet():
+    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    creds_dict = dict(st.secrets)
+    sheet_url = creds_dict.pop("spreadsheet_url")
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    client = gspread.authorize(creds)
+    return client.open_by_url(sheet_url)
+
+try:
+    gc = get_google_sheet()
+    worksheet = gc.worksheet("Research")
+    data = worksheet.get_all_records()
+    df = pd.DataFrame(data)
+except Exception as e:
+    st.error(f"Error connecting to Google Sheets: {e}")
+    df = pd.DataFrame()
+
 # Navigation Header
 st.caption("Dashboard / Research")
 st.title("Research")
@@ -34,7 +53,7 @@ col2.metric("Outflow", "$5,000,000.00")
 col3.metric("Latest Interest", "$28,136.39")
 col4.metric("Gross Profit", "$0.00")
 
-# Fixed Layout for Sub-Metrics (Using Markdown Columns instead of raw HTML)
+# Sub-Metrics Layout
 m1, m2, m3, m4 = st.columns(4)
 m1.markdown("**7-Day Interest:**<br>$258,622.73", unsafe_allow_html=True)
 m2.markdown("**30-Day Interest:**<br>$593,798.25", unsafe_allow_html=True)
@@ -60,10 +79,19 @@ with tab1:
         tx_desc = c5.text_input("Description", placeholder="e.g. Starting Balance")
         
         if st.form_submit_button("+ Add Transaction", type="primary"):
-            st.success("Transaction submitted successfully!")
+            try:
+                # Appends row matching your sheet columns: Date, Inflow, Gross Profit, Outflow, Balance, Description
+                worksheet.append_row([str(tx_date), tx_inflow, tx_gross, tx_outflow, "", tx_desc])
+                st.success("Transaction added and saved to your Google Sheet!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Failed to save: {e}")
 
     st.markdown("### Transaction Log")
-    st.info("Your app layout is ready. Link your Google Sheet via Streamlit secrets to display live table rows.")
+    if not df.empty:
+        st.dataframe(df, use_container_width=True)
+    else:
+        st.info("No transaction data found or sheet is empty.")
 
 # Tab 2: Interest Log
 with tab2:
