@@ -21,14 +21,13 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Connect to Google Sheets via Secrets
+# Connect to Google Sheets using the uploaded credentials.json file
 @st.cache_resource
 def get_google_sheet():
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    creds_dict = dict(st.secrets)
-    sheet_url = creds_dict.pop("spreadsheet_url")
-    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    creds = Credentials.from_service_account_file("credentials.json", scopes=scopes)
     client = gspread.authorize(creds)
+    sheet_url = st.secrets["spreadsheet_url"]
     return client.open_by_url(sheet_url)
 
 try:
@@ -80,7 +79,6 @@ with tab1:
         
         if st.form_submit_button("+ Add Transaction", type="primary"):
             try:
-                # Appends row matching your sheet columns: Date, Inflow, Gross Profit, Outflow, Balance, Description
                 worksheet.append_row([str(tx_date), tx_inflow, tx_gross, tx_outflow, "", tx_desc])
                 st.success("Transaction added and saved to your Google Sheet!")
                 st.rerun()
