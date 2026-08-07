@@ -1,6 +1,6 @@
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
 import pandas as pd
+import gspread
 
 # Page Configuration
 st.set_page_config(page_title="Fund Tracker", layout="wide", initial_sidebar_state="collapsed")
@@ -42,9 +42,6 @@ st.markdown(
 
 st.markdown("---")
 
-# Google Sheets Data Connection
-conn = st.connection("gsheets", type=GSheetsConnection)
-
 # Tabs Navigation
 tab1, tab2, tab3, tab4 = st.tabs(["Transactions", "Interest Log", "Loan Log", "Customize"])
 
@@ -62,15 +59,10 @@ with tab1:
         tx_desc = c5.text_input("Description", placeholder="e.g. Starting Balance")
         
         if st.form_submit_button("+ Add Transaction", type="primary"):
-            st.success("Transaction added!")
-            st.rerun()
+            st.success("Transaction added successfully!")
 
     st.markdown("### Transaction Log")
-    try:
-        tx_df = conn.read(worksheet="Research", ttl=0)
-        st.dataframe(tx_df, use_container_width=True)
-    except Exception:
-        st.info("Connect your Google Sheet secrets to show live spreadsheet data.")
+    st.info("Make sure your Google Sheet is shared as 'Anyone with the link can view' to display data.")
 
 # Tab 2: Interest Log
 with tab2:
