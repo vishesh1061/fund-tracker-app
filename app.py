@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import gspread
+from google.oauth2.service_account import Credentials
 
 # Page Configuration
 st.set_page_config(page_title="Fund Tracker", layout="wide", initial_sidebar_state="collapsed")
@@ -33,12 +34,12 @@ col2.metric("Outflow", "$5,000,000.00")
 col3.metric("Latest Interest", "$28,136.39")
 col4.metric("Gross Profit", "$0.00")
 
-st.markdown(
-    "**7-Day Interest:** $258,622.73 &nbsp;&nbsp;|&nbsp;&nbsp; "
-    "**30-Day Interest:** $593,798.25 &nbsp;&nbsp;|&nbsp;&nbsp; "
-    "**Total Interest:** $593,798.25 &nbsp;&nbsp;|&nbsp;&nbsp; "
-    "**Loan Deductions:** $0.00"
-)
+# Fixed Layout for Sub-Metrics (Using Markdown Columns instead of raw HTML)
+m1, m2, m3, m4 = st.columns(4)
+m1.markdown("**7-Day Interest:**<br>$258,622.73", unsafe_allow_html=True)
+m2.markdown("**30-Day Interest:**<br>$593,798.25", unsafe_allow_html=True)
+m3.markdown("**Total Interest:**<br>$593,798.25", unsafe_allow_html=True)
+m4.markdown("**Loan Deductions:**<br>$0.00", unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -59,10 +60,10 @@ with tab1:
         tx_desc = c5.text_input("Description", placeholder="e.g. Starting Balance")
         
         if st.form_submit_button("+ Add Transaction", type="primary"):
-            st.success("Transaction added successfully!")
+            st.success("Transaction submitted successfully!")
 
     st.markdown("### Transaction Log")
-    st.info("Make sure your Google Sheet is shared as 'Anyone with the link can view' to display data.")
+    st.info("Your app layout is ready. Link your Google Sheet via Streamlit secrets to display live table rows.")
 
 # Tab 2: Interest Log
 with tab2:
