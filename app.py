@@ -6,6 +6,35 @@ from google.oauth2.service_account import Credentials
 st.set_page_config(page_title="Fund Tracker", layout="wide")
 
 
+def get_clean_credentials():
+  """Formats private key from Streamlit Secrets into a valid PEM RSA structure."""
+  creds_dict = dict(st.secrets["gcp_service_account"])
+
+  raw_key = creds_dict.get("private_key", "")
+  # Handle literal '\\n' strings
+  raw_key = raw_key.replace("\\n", "\n")
+
+  # Strip headers/footers to extract raw Base64 content
+  clean_body = (
+      raw_key.replace("-----BEGIN PRIVATE KEY-----", "")
+      .replace("-----END PRIVATE KEY-----", "")
+      .replace("\n", "")
+      .replace("\r", "")
+      .replace(" ", "")
+  )
+
+  # Chunk Base64 body into standard 64-character PEM lines
+  chunks = [clean_body[i : i + 64] for i in range(0, len(clean_body), 64)]
+  formatted_key = (
+      "-----BEGIN PRIVATE KEY-----\n"
+      + "\n".join(chunks)
+      + "\n-----END PRIVATE KEY-----\n"
+  )
+
+  creds_dict["private_key"] = formatted_key
+  return creds_dict
+
+
 @st.cache_resource
 def get_google_sheet():
   try:
@@ -14,15 +43,8 @@ def get_google_sheet():
         "https://www.googleapis.com/auth/drive",
     ]
 
-    # Load authentication directly from Streamlit Secrets
-    if "gcp_service_account" in st.secrets:
-      creds_dict = dict(st.secrets["gcp_service_account"])
-      creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-    else:
-      # Fallback to local credentials file
-      creds = Credentials.from_service_account_file(
-          "credentials.json", scopes=scopes
-      )
+    creds_dict = get_clean_credentials()
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
 
     client = gspread.authorize(creds)
     sheet_url = st.secrets["spreadsheet_url"]
