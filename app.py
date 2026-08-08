@@ -8,27 +8,25 @@ from google.oauth2.service_account import Credentials
 st.set_page_config(page_title="Fund Tracker", layout="wide")
 
 
-# Connect to Google Sheets safely handling JSON key formatting issues
+# Connect to Google Sheets and dynamically fix key formatting
 @st.cache_resource
 def get_google_sheet():
   try:
     with open("credentials.json", "r") as f:
-      raw_json = f.read()
+      creds_data = json.load(f)
 
-    # Clean up double-escaped backslashes if present
-    raw_json = raw_json.replace("\\\\n", "\\n")
-
-    info = json.loads(raw_json)
-
-    # Ensure private key handles newlines correctly for the PEM parser
-    if "private_key" in info:
-      info["private_key"] = info["private_key"].replace("\\n", "\n")
+    # Ensure the PEM key string uses actual line breaks everywhere
+    if "private_key" in creds_data:
+      key = creds_data["private_key"]
+      # Replace literal '\\n' or '\n' string representations with actual newlines
+      key = key.replace("\\n", "\n")
+      creds_data["private_key"] = key
 
     scopes = [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive",
     ]
-    creds = Credentials.from_service_account_info(info, scopes=scopes)
+    creds = Credentials.from_service_account_info(creds_data, scopes=scopes)
     client = gspread.authorize(creds)
 
     sheet_url = st.secrets["spreadsheet_url"]
@@ -49,21 +47,11 @@ if sheet:
 
     st.title("Research")
 
-    # Display key metrics if data exists
     if not df.empty:
-      # Simple metric summaries (adjust column names as per your sheet)
       col1, col2, col3, col4 = st.columns(4)
 
-      inflow = (
-          df["Inflow"].sum()
-          if "Inflow" in df.columns
-          else 19121332.00
-      )
-      outflow = (
-          df["Outflow"].sum()
-          if "Outflow" in df.columns
-          else 5000000.00
-      )
+      inflow = df["Inflow"].sum() if "Inflow" in df.columns else 19121332.00
+      outflow = df["Outflow"].sum() if "Outflow" in df.columns else 5000000.00
       balance = inflow - outflow
 
       col1.metric("Current Balance", f"${balance:,.2f}")
