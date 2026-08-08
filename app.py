@@ -3,11 +3,9 @@ import pandas as pd
 import streamlit as st
 from google.oauth2.service_account import Credentials
 
-# Set up page config
 st.set_page_config(page_title="Fund Tracker", layout="wide")
 
 
-# Native Google Credentials connection
 @st.cache_resource
 def get_google_sheet():
   try:
@@ -15,12 +13,18 @@ def get_google_sheet():
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive",
     ]
-    # Load directly using Google's native SA file parser
-    creds = Credentials.from_service_account_file(
-        "credentials.json", scopes=scopes
-    )
-    client = gspread.authorize(creds)
 
+    # Load authentication directly from Streamlit Secrets
+    if "gcp_service_account" in st.secrets:
+      creds_dict = dict(st.secrets["gcp_service_account"])
+      creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    else:
+      # Fallback to local credentials file
+      creds = Credentials.from_service_account_file(
+          "credentials.json", scopes=scopes
+      )
+
+    client = gspread.authorize(creds)
     sheet_url = st.secrets["spreadsheet_url"]
     return client.open_by_url(sheet_url)
   except Exception as e:
@@ -28,7 +32,6 @@ def get_google_sheet():
     return None
 
 
-# Fetch data from sheet
 sheet = get_google_sheet()
 
 if sheet:
