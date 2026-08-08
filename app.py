@@ -3,9 +3,10 @@ import streamlit as st
 
 st.set_page_config(page_title="Fund Tracker", layout="wide")
 
-SHEET_ID = "1PKfZ0ayHnYIrs9El5dkpYLkaOOg6s6yUs23O1AalQD0"
+# Exact Sheet ID from your URL
+SHEET_ID = "1PKfZ0ayHnYIrs9EI5dkpYLkaOOg6s6yUs23O1AalQD0"
 CSV_URL = (
-    f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
+    f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=0"
 )
 
 
@@ -20,7 +21,7 @@ try:
   st.title("Research")
 
   if not df.empty:
-    # Clean up currency string values to numbers ($ and commas)
+    # Convert currency formatting ($ and commas) to clean float numbers
     for col in ["Inflow", "Outflow"]:
       if col in df.columns:
         df[col] = pd.to_numeric(
